@@ -1,0 +1,104 @@
+---
+- name: Setup Firewall on Ubuntu and CentOS
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Install UFW on Ubuntu
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Enable and start the firewall service
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - ufw
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Allow SSH through the firewall
+      command:
+        cmd: "{{ item }}"
+      with_items:
+        - sudo ufw allow OpenSSH
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Permiting SSH
+      firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Permiting HTTP
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Permiting HTTPS
+      firewalld:
+        service: https
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'Ubuntu'
+
+    - block:
+        - name: Displaying the status
+          command: systemctl status firewalld
+          register: firewalld_service     
+          when: ansible_distribution == 'Ubuntu'
+
+    - name: Install firewalld on CentOS
+      ansible.builtin.yum:
+        name: firewalld
+        state: present
+      when: ansible_distribution == 'CentOS'
+
+    - name: Enable and start the firewall service
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items: 
+        - firewalld
+      when: ansible_distribution == 'CentOS'
+
+    - name: Allow SSH through the firewall
+      command:
+        cmd: "{{ item }}"
+      with_items:
+        - firewall-cmd --zone=public --add-service=ssh --permanent
+      when: ansible_distribution == 'CentOS'
+    
+    - name: Permiting SSH
+      firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'CentOS'
+
+    - name: Permiting HTTP
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'CentOS'
+
+    - name: Permiting HTTPS
+      firewalld:
+        service: https
+        permanent: true
+        state: enabled
+      when: ansible_distribution == 'CentOS'
+
+    - block:
+      - name: Displaying the status
+        command: systemctl status firewalld
+        register: firewalld_service
+      when: ansible_distribution == 'CentOS'
+
